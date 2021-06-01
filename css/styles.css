@@ -132,6 +132,67 @@ body {
   float: right;
 }
 
+i {
+  z-index: 10;
+}
+
+.numero-carrito {
+  position: absolute;
+  font-size: large;
+  text-align: center;
+  bottom: 75%;
+  right: 1%;
+  width: 3vh;
+  height: 3vh;
+  -moz-border-radius: 50%;
+  -webkit-border-radius: 50%;
+  border-radius: 50%;
+  background: #e47d1d;
+}
+
+.carrito {
+  color: white;
+}
+
+.total-carrito {
+  display: inline-block;
+  color: white;
+  margin: 3%;
+  padding: 1%;
+  background-color: rgb(202, 115, 34);
+}
+
+/* MODAL */
+/* Z-index of #mask must lower than #boxes .window */
+#mask {
+  position: absolute;
+  z-index: 999;
+  background-color: #000;
+  display: none;
+}
+
+#boxes .window {
+  position: fixed;
+  width: 800px;
+  height: 600px;
+  display: none;
+  z-index: 9999;
+  padding: 20px;
+  background-color: #fff;
+  overflow: scroll;
+}
+
+
+/* Customize your modal window here, you can add background image too */
+#boxes #dialog {
+  width: 375px;
+  height: 203px;
+}
+
+.abrir-carrito {
+  width: 85%;
+  /* padding: 50vh; */
+}
 
 
 

@@ -9,6 +9,25 @@
 
 window.addEventListener('DOMContentLoaded', event => {
 
+    let carrito = []
+
+    if (localStorage.getItem('carrito')) {
+        carrito = JSON.parse(localStorage.getItem('carrito'))
+        $('#finalizar-compra').prop('disabled', false);
+    } else {
+        carrito = []
+        $('#finalizar-compra').prop('disabled', true);
+    }
+
+    if (carrito != []) {
+        cargarCarrito()
+    }
+
+
+    document.getElementById('mostrar-carrito').addEventListener("click", () => {
+        modal()
+    })
+
     // Activate Bootstrap scrollspy on the main nav element
     const sideNav = document.body.querySelector('#sideNav');
     if (sideNav) {
@@ -169,13 +188,13 @@ window.addEventListener('DOMContentLoaded', event => {
         for (let i = 0; i < 20; i++) {
             let producto
             busquedaJson.results[i]
-                 producto = {
-                    id: busquedaJson.results[i].id,
-                    nombre: busquedaJson.results[i].title,
-                    imagen: busquedaJson.results[i].thumbnail,
-                    precio: busquedaJson.results[i].price,
-                    cantidadDisponible: busquedaJson.results[i].available_quantity
-                }
+            producto = {
+                id: busquedaJson.results[i].id,
+                nombre: busquedaJson.results[i].title,
+                imagen: busquedaJson.results[i].thumbnail,
+                precio: busquedaJson.results[i].price,
+                cantidadDisponible: busquedaJson.results[i].available_quantity
+            }
             datosProductos.push(producto)
         }
         return datosProductos
@@ -205,9 +224,9 @@ window.addEventListener('DOMContentLoaded', event => {
               <p class="card-text">Disponibles: ${item.stock}</p>
               <label>Cantidad</label>
               <p>
-              <a class='${item.nombre}' id='restar'><i class="fas fa-minus"></i></a>
+              <a class='${item.id}' id='restar'><i class="fas fa-minus ${item.id}"></i></a>
               <input type="text" size="2" id='cantidad${item.id}' value='1'></input>
-              <a class='${item.nombre}' id='sumar'><i class="fas fa-plus"></i></a>
+              <a class='${item.id}' id='sumar'><i class="fas fa-plus ${item.id}"></i></a>
               </p>
               <p class="card-text"><button class="btn btn-danger" id="btn-comprar" ingrediente="${item.id}">COMPRAR</button></p>
             </div>
@@ -225,7 +244,7 @@ window.addEventListener('DOMContentLoaded', event => {
                 let cantidadComprada = Number(document.getElementById(`cantidad${objetoComprado.id}`).value)
                 objetoComprado.cantidad = cantidadComprada
                 console.log(objetoComprado)
-                // agregarCarrito(objetoComprado)
+                agregarCarrito(objetoComprado)
             });
         });
 
@@ -282,5 +301,167 @@ window.addEventListener('DOMContentLoaded', event => {
         res = await traduccion.json()
         return res.data.translations[0].translatedText
     }
+
+
+    //AGREGAR ARTICULO AL CARRITO
+    function agregarCarrito(objetoCarrito) {
+
+        // Busco el producto dentro de la variable Carrito
+        let yaComprado = carrito.find(el => el.id == objetoCarrito.id)
+        if (yaComprado) {
+            // Si lo encuentra, suma sus propiedades de cantidad
+            yaComprado.cantidad += objetoCarrito.cantidad
+        } else {
+            // Si no lo encuentra, agrega un nuevo elemento al carrito
+            carrito.push(objetoCarrito)
+        }
+
+        localStorage.setItem('carrito', JSON.stringify(carrito))
+        $('#finalizar-compra').prop('disabled', false);
+        cargarCarrito()
+
+    }
+
+    //QUITAR ARTICULO DEL CARRITO
+    function quitarDelCarrito(id) {
+
+        let removerArt = carrito.indexOf(carrito.find(el => el.id == id))
+        carrito.splice(removerArt, 1)
+        localStorage.setItem('carrito', JSON.stringify(carrito))
+        let productosCarrito = document.querySelector('.producto')
+        productosCarrito.parentNode.removeChild(productosCarrito)
+        cargarCarrito()
+
+    }
+
+    //DIBUJAR EL CARRITO
+    function cargarCarrito() {
+        let productosEnCarrito = ''
+        $('#carrito').html('')
+        let totalCarrito = 0
+        let numeroCarrito = 0
+
+        for (let productoCarrito of carrito) {
+            let totalProducto = productoCarrito.precio * productoCarrito.cantidad
+
+            productosEnCarrito = document.createElement('div')
+            productosEnCarrito.className = 'card border-success dropdown-item producto'
+
+            productosEnCarrito.innerHTML = `
+            <div class="card mb-3">
+                <div class="row g-0">
+                    <div class="col-md-4">
+                    <img src="${productoCarrito.imagen}" alt="...">
+                    </div>
+                    <div class="col-md-8">
+                    <div class="card-body">
+                        <h5 class="card-title">${productoCarrito.nombre}</h5>
+                        <p class="card-text">Cantidad: ${productoCarrito.cantidad}</p>
+                        <p class="card-text">Precio $${totalProducto}</p>
+                        <button class='btn btn-danger remover' id="${productoCarrito.id}">Quitar del carrito</button>
+                    </div>
+                    </div>
+                </div>
+            </div>`
+
+            totalCarrito += totalProducto
+            numeroCarrito += 1
+
+            $('#carrito').append(productosEnCarrito)
+        }
+
+        $('#numero-carrito').html(numeroCarrito)
+        $('#total-carrito').html(`Total de la compra $${totalCarrito}`)
+
+        document.querySelectorAll(".remover").forEach(el => {
+            el.addEventListener("click", e => {
+                quitarDelCarrito(e.target.id)
+            });
+        });
+    }
+
+
+    document.getElementById('finalizar-compra').addEventListener("click", () => {
+
+        generarLinkDePago()
+       
+    })
+
+    async function generarLinkDePago() {
+          const productsToMP = carrito.map((element) => {
+            let nuevoElemento = {
+              title: element.nombre,
+              description: "",
+              picture_url: "",
+              category_id:element.id,
+              quantity: Number(element.cantidad),
+              currency_id: "ARS",
+              unit_price: Number(element.precio),
+            };
+            return nuevoElemento;
+          });
+          console.log(productsToMP);
+          const response = await fetch(
+            "https://api.mercadopago.com/checkout/preferences",
+            {
+              method: "POST",
+              headers: {
+                Authorization:
+                  "Bearer TEST-4030376229634508-053121-d3c93e21a2b01d6259f7a47988844a28-55933383",
+              },
+              body: JSON.stringify({
+                items: productsToMP,
+              }),
+            }
+          );
+          const data = await response.json();
+            // console.log(data)
+          window.open(data.init_point, "_blank");
+        }
+
+
+    // MODAL
+
+    function modal() {
+        var id = "#modal-inicial";
+
+
+        //Mascara de fondo que ocupa toda la pantalla
+        $('#mask').css({
+            'width': $(window).width(),
+            'height': $(document).height()
+        });
+
+        //Efecto de aparicion de mascara             
+        $('#mask').fadeIn(1000);
+        $('#mask').fadeTo("slow", 0.8);
+
+
+        //Colocar el modal en medio de la pantalla
+        $(id).css('top', $(window).height() / 2.2 - $(id).height() / 2);
+        $(id).css('left', $(window).width() / 2.2 - $(id).width() / 2);
+
+        //Animaciones anidadas
+        $("#promociones").hide()
+        $(id).fadeIn(2000, function () {
+            $("#hotsale").fadeOut(1500, function () {
+                $("#promociones").fadeIn(1000)
+            })
+        });
+
+    };
+
+    //Cerrar modal al hacer click en "Cerrar"
+    $('.window .close').click(function (e) {
+        //Cancel the link behavior
+        e.preventDefault();
+        $('#mask, .window').hide();
+    });
+
+    //Cerrar modal al hacer click fuera del modal
+    $('#mask').click(function () {
+        $(this).hide();
+        $('.window').hide();
+    });
 
 });
