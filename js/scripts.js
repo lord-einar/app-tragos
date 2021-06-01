@@ -28,6 +28,10 @@ window.addEventListener('DOMContentLoaded', event => {
         modal()
     })
 
+    document.getElementById('abrir-carrito').addEventListener("click", () => {
+        modal()
+    })
+
     // Activate Bootstrap scrollspy on the main nav element
     const sideNav = document.body.querySelector('#sideNav');
     if (sideNav) {
